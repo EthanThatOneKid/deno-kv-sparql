@@ -1,5 +1,7 @@
 // deno-types="@types/n3"
-import { BindingsStream, Parser, Quad, ResultStream, Store, Writer } from "n3";
+import type { BindingsStream, Quad, ResultStream } from "n3";
+// deno-types="@types/n3"
+import { Parser, Store, Writer } from "n3";
 import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
 import { getAsBlob, set as setBlob } from "@kitsonk/kv-toolbox/blob";
 
@@ -14,7 +16,7 @@ export async function kvSparql(
 ): Promise<SparqlResult> {
   const store = (await getStore(kv, key, options?.consistency)) ??
     new Store<Quad, Quad, Quad, Quad>();
-  const result = await sparql(store, query);
+  const result = await sparql(store, query, options?.queryEngine);
   await setStore(kv, key, store, {
     expireIn: options?.expireIn,
     format: options?.format,
@@ -29,9 +31,9 @@ export async function kvSparql(
 export async function sparql(
   store: Store,
   query: string,
-  engine = new QueryEngine(),
+  queryEngine = new QueryEngine(),
 ): Promise<SparqlResult> {
-  const parsedQuery = await engine.query(query, { sources: [store] });
+  const parsedQuery = await queryEngine.query(query, { sources: [store] });
   return {
     resultType: parsedQuery.resultType,
     data: await parsedQuery.execute(),
@@ -122,4 +124,9 @@ export interface KvSparqlOptions {
    * format is the serlization format of the store.
    */
   format?: string;
+
+  /**
+   * queryEngine is the SPARQL query engine to use.
+   */
+  queryEngine?: QueryEngine;
 }
