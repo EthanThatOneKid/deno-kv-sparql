@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { kvSparql } from "./sparql.ts";
+import { kvSparql } from "./kv-sparql.ts";
 
 Deno.test({
   permissions: { sys: true },
@@ -10,7 +10,7 @@ Deno.test({
     await t.step("insert data", async () => {
       const result = await kvSparql(
         kv,
-        ["test"],
+        ["example"],
         "INSERT DATA { <http://example.org/s> <http://example.org/p> <http://example.org/o> }",
       );
       assertEquals(result.resultType, "void");
@@ -19,7 +19,7 @@ Deno.test({
     await t.step("query data", async () => {
       const result = await kvSparql(
         kv,
-        ["test"],
+        ["example"],
         "SELECT * WHERE { ?s ?p ?o }",
       );
 
