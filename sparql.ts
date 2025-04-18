@@ -10,12 +10,16 @@ export async function kvSparql(
   kv: Deno.Kv,
   key: Deno.KvKey,
   query: string,
-  consistency?: Deno.KvConsistencyLevel,
+  options?: KvSparqlOptions,
 ): Promise<SparqlResult> {
-  const store = (await getStore(kv, key, consistency)) ??
+  const store = (await getStore(kv, key, options?.consistency)) ??
     new Store<Quad, Quad, Quad, Quad>();
   const result = await sparql(store, query);
-  await setStore(kv, key, store);
+  await setStore(kv, key, store, {
+    expireIn: options?.expireIn,
+    format: options?.format,
+  });
+
   return result;
 }
 
@@ -65,7 +69,7 @@ export async function setStore(
   kv: Deno.Kv,
   key: Deno.KvKey,
   store: Store,
-  options?: { format?: string; expireIn?: number },
+  options?: Pick<KvSparqlOptions, "expireIn" | "format">,
 ): Promise<Deno.KvCommitResult> {
   // https://github.com/rdfjs/N3.js#writing
   const writer = new Writer({ format: options?.format });
@@ -73,6 +77,7 @@ export async function setStore(
   const blob = new Blob([new TextEncoder().encode(result)], {
     type: options?.format,
   });
+
   return await setBlob(kv, key, blob, { expireIn: options?.expireIn });
 }
 
@@ -97,4 +102,24 @@ export async function getStore(
   }
 
   return null;
+}
+
+/**
+ * KvSparqlOptions are the options for kvSparql.
+ */
+export interface KvSparqlOptions {
+  /**
+   * consistency is the consistency level for the Kv store.
+   */
+  consistency?: Deno.KvConsistencyLevel;
+
+  /**
+   * expireIn is the expiration time for the Kv store.
+   */
+  expireIn?: number;
+
+  /**
+   * format is the serlization format of the store.
+   */
+  format?: string;
 }
